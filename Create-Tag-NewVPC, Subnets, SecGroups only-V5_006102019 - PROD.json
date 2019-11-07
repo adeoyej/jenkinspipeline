@@ -1,0 +1,688 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+
+  "Description" : "Create and Tag - New Networking components only: New VPC, Subnets, Security Groups only - V5_006102019 - PROD",
+
+  "Parameters" : {
+
+    "awsRegionLabel" : {
+      "Type" : "String",
+	  "AllowedValues" : [ "use", "usw", "apn", "aps", "euc", "euw", "sae", "cac", "apse"],
+      "Description" : " For Tagging purpose - Select region where resource is to be configured. e.g: usw => us-west"
+    },
+  
+    "awsAVZone1Label" : {
+      "Type" : "String",
+	  "AllowedValues" : [ "1a", "1b", "1c", "1d", "1e", "2a", "2b", "2c", "2d", "2e"],
+      "Description" : " For Tagging purpose - Select AZ where resource is to be configured based on (awsAVZone) above. e.g: 2b => us-west-2b"
+    },
+
+    "awsAVZone2Label" : {
+      "Type" : "String",
+	  "AllowedValues" : [  "1a", "1b", "1c", "1d", "1e", "2a", "2b", "2c", "2d", "2e"],
+      "Description" : " For Tagging purpose - Select AZ where resource is to be configured based on (awsAVZone) above. e.g: 2b => us-west-2b"
+    },
+
+    "awsAVZone3Label" : {
+      "Type" : "String",
+	  "AllowedValues" : [  "1a", "1b", "1c", "1d", "1e", "2a", "2b", "2c", "2d", "2e"],
+      "Description" : " For Tagging purpose - Select AZ where resource is to be configured based on (awsAVZone) above. e.g: 2b => us-west-2b"
+    },
+	
+    "ClientEnvironmentLabel" : {
+      "Type" : "String",
+	  "AllowedValues" : [ "d01", "d02", "d03", "t01", "t02", "t03", "p01", "p02", "p03"],
+      "Description" : " For Tagging purpose - Select Client's current environment. e.g. D=Dev, T=Test, P=Prod"
+    },
+	
+    "ClientName" : {
+      "Type" : "String",
+      "MinLength": "1",
+      "MaxLength": "20",      
+      "Description" : "Type Client name here. For example - bms"
+    }, 
+  
+    "ClientAppRole" : {
+      "Type" : "String",
+	  "AllowedValues" : [ "web", "iis", "oracle", "mssql", "mysql", "database"],	  
+      "Description" : "Select the role for the Client here. For example - web or database"
+    },
+	
+    "ClientsDMZRole" : {
+      "Type" : "String",
+      "Default": "dmz", 
+      "Description" : "DMZ infrastructure for the Client."
+    },		
+	
+    "ClientsDATARole" : {
+      "Type" : "String",
+      "Default": "data", 
+      "Description" : " DATA infrastructure for the Client."
+    },
+	
+    "ClientsTESTRole" : {
+      "Type" : "String",
+      "Default": "test", 
+      "Description" : " TEST infrastructure for the Client here."
+    },	
+	
+    "ServerAccess" : {
+      "Description" : "Jumpbox IP or CIDR IP range allowed to login to the EC2 instance",
+      "Type" : "String",
+      "MinLength": "9",
+      "MaxLength": "18",
+      "Default" : "0.0.0.0/0",
+      "AllowedPattern" : "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+      "ConstraintDescription" : "must be a valid CIDR range of the form x.x.x.x/x."
+    },
+
+    "aws1VPCCIDR" : {
+      "Description" : "Type here the CIDR block for Client's VPC",
+      "Type" : "String",
+      "MinLength": "9",
+      "MaxLength": "18",
+      "Default" : "10.24.0.0/16",
+      "AllowedPattern" : "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+      "ConstraintDescription" : "must be a valid CIDR range of the form x.x.x.x/x."
+    },
+
+    "awsDMZ1CIDR" : {
+      "Description" : "Type here the CIDR block for Client's DMZ Subnet",
+      "Type" : "String",
+      "MinLength": "9",
+      "MaxLength": "18",
+      "Default" : "10.24.0.0/24",
+      "AllowedPattern" : "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+      "ConstraintDescription" : "must be a valid CIDR range of the form x.x.x.x/x."
+    },
+	
+    "awsDMZ2CIDR" : {
+      "Description" : "Type here the CIDR block for Client's DMZ Subnet",
+      "Type" : "String",
+      "MinLength": "9",
+      "MaxLength": "18",
+      "Default" : "10.24.0.0/24",
+      "AllowedPattern" : "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+      "ConstraintDescription" : "must be a valid CIDR range of the form x.x.x.x/x."
+    },	
+
+    "awsDMZ3CIDR" : {
+      "Description" : "Type here the CIDR block for Client's DMZ Subnet",
+      "Type" : "String",
+      "MinLength": "9",
+      "MaxLength": "18",
+      "Default" : "10.24.0.0/24",
+      "AllowedPattern" : "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+      "ConstraintDescription" : "must be a valid CIDR range of the form x.x.x.x/x."
+    },
+	
+    "awsDATA1CIDR" : {
+      "Description" : "Type here the CIDR block for Client's DATA Subnet",
+      "Type" : "String",
+      "MinLength": "9",
+      "MaxLength": "18",
+      "Default" : "10.24.2.0/24",
+      "AllowedPattern" : "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+      "ConstraintDescription" : "must be a valid CIDR range of the form x.x.x.x/x."
+    },
+
+    "awsDATA2CIDR" : {
+      "Description" : "Type here the CIDR block for Client's DATA Subnet",
+      "Type" : "String",
+      "MinLength": "9",
+      "MaxLength": "18",
+      "Default" : "10.24.2.0/24",
+      "AllowedPattern" : "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+      "ConstraintDescription" : "must be a valid CIDR range of the form x.x.x.x/x."
+    },
+
+    "awsDATA3CIDR" : {
+      "Description" : "Type here the CIDR block for Client's DATA Subnet",
+      "Type" : "String",
+      "MinLength": "9",
+      "MaxLength": "18",
+      "Default" : "10.24.2.0/24",
+      "AllowedPattern" : "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+      "ConstraintDescription" : "must be a valid CIDR range of the form x.x.x.x/x."
+    },
+	
+    "awsTEST1CIDR" : {
+      "Description" : "Type here the CIDR block for Client's TEST Subnet",
+      "Type" : "String",
+      "MinLength": "9",
+      "MaxLength": "18",
+      "Default" : "10.24.1.0/24",
+      "AllowedPattern" : "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+      "ConstraintDescription" : "must be a valid CIDR range of the form x.x.x.x/x."
+    },
+
+    "awsTEST2CIDR" : {
+      "Description" : "Type here the CIDR block for Client's TEST Subnet",
+      "Type" : "String",
+      "MinLength": "9",
+      "MaxLength": "18",
+      "Default" : "10.24.1.0/24",
+      "AllowedPattern" : "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+      "ConstraintDescription" : "must be a valid CIDR range of the form x.x.x.x/x."
+    },
+	
+    "awsAVZone1": {
+      "Description": "select the FIRST Availability Zone for your Deployment",
+      "Type": "AWS::EC2::AvailabilityZone::Name"
+    },
+	
+    "awsAVZone2": {
+      "Description": "select the SECOND Availability Zone for your Deployment - MUST BE DIFFERENT from awsAVZone1",
+      "Type": "AWS::EC2::AvailabilityZone::Name"
+    },
+
+    "awsAVZone3": {
+      "Description": "select the SECOND Availability Zone for your Deployment - MUST BE DIFFERENT from awsAVZone1",
+      "Type": "AWS::EC2::AvailabilityZone::Name"
+    }
+	
+  },
+
+  "Resources" : {
+
+    "cpaVPC" : {
+      "Type" : "AWS::EC2::VPC",
+      "Properties" : {
+        "CidrBlock" : { "Ref" : "aws1VPCCIDR" },
+		"InstanceTenancy": "default",
+        "EnableDnsSupport": "true",
+        "EnableDnsHostnames": "true",
+        "Tags" : [
+          { "Key" : "Client", "Value" : { "Ref" : "ClientName" } },
+          { "Key" : "Name", "Value": { "Fn::Join" : [ "-", [ { "Ref" : "awsRegionLabel" }, { "Ref" : "ClientName" }, "vpc" ]]}}
+        ]
+      }
+    },
+
+    "awsDMZ1Subnet" : {
+      "DependsOn" : ["cpaVPC"],
+      "Type" : "AWS::EC2::Subnet",
+      "Properties" : {
+        "VpcId" : { "Ref" : "cpaVPC" },
+		"AvailabilityZone" : { "Ref" : "awsAVZone1" },
+        "CidrBlock" : { "Ref" : "awsDMZ1CIDR" },
+        "Tags" : [
+          { "Key" : "Client", "Value" : { "Ref" : "ClientName" } },
+          { "Key" : "Network", "Value" : "Public" },
+	      { "Key" : "Name", "Value": { "Fn::Join" : [ "-", [ { "Ref" : "awsRegionLabel" },{ "Ref" : "awsAVZone1Label" }, { "Ref" : "ClientName" }, { "Ref" : "ClientsDMZRole" }, "sb" ]]}}
+        ]
+      }
+    },
+
+    "awsDMZ2Subnet" : {
+      "DependsOn" : ["cpaVPC"],
+      "Type" : "AWS::EC2::Subnet",
+      "Properties" : {
+        "VpcId" : { "Ref" : "cpaVPC" },
+		"AvailabilityZone" : { "Ref" : "awsAVZone2" },
+        "CidrBlock" : { "Ref" : "awsDMZ2CIDR" },
+        "Tags" : [
+          { "Key" : "Client", "Value" : { "Ref" : "ClientName" } },
+          { "Key" : "Network", "Value" : "Public" },
+	      { "Key" : "Name", "Value": { "Fn::Join" : [ "-", [ { "Ref" : "awsRegionLabel" },{ "Ref" : "awsAVZone2Label" }, { "Ref" : "ClientName" }, { "Ref" : "ClientsDMZRole" }, "sb" ]]}}
+        ]
+      }
+    },
+
+    "awsDMZ3Subnet" : {
+      "DependsOn" : ["cpaVPC"],
+      "Type" : "AWS::EC2::Subnet",
+      "Properties" : {
+        "VpcId" : { "Ref" : "cpaVPC" },
+		"AvailabilityZone" : { "Ref" : "awsAVZone3" },
+        "CidrBlock" : { "Ref" : "awsDMZ3CIDR" },
+        "Tags" : [
+          { "Key" : "Client", "Value" : { "Ref" : "ClientName" } },
+          { "Key" : "Network", "Value" : "Public" },
+	      { "Key" : "Name", "Value": { "Fn::Join" : [ "-", [ { "Ref" : "awsRegionLabel" },{ "Ref" : "awsAVZone3Label" }, { "Ref" : "ClientName" }, { "Ref" : "ClientsDMZRole" }, "sb" ]]}}
+        ]
+      }
+    },
+	
+    "awsDATA1Subnet" : {
+      "DependsOn" : ["cpaVPC"],
+      "Type" : "AWS::EC2::Subnet",
+      "Properties" : {
+        "VpcId" : { "Ref" : "cpaVPC" },
+		"AvailabilityZone" : { "Ref" : "awsAVZone1" },
+        "CidrBlock" : { "Ref" : "awsDATA1CIDR" },
+        "Tags" : [
+          { "Key" : "Client", "Value" : { "Ref" : "ClientName" } },
+          { "Key" : "Network", "Value" : "Public" },
+	      { "Key" : "Name", "Value": { "Fn::Join" : [ "-", [ { "Ref" : "awsRegionLabel" },{ "Ref" : "awsAVZone1Label" }, { "Ref" : "ClientName" }, { "Ref" : "ClientsDATARole" }, "sb" ]]}}
+        ]
+      }
+    },
+
+    "awsDATA2Subnet" : {
+      "DependsOn" : ["cpaVPC"],
+      "Type" : "AWS::EC2::Subnet",
+      "Properties" : {
+        "VpcId" : { "Ref" : "cpaVPC" },
+		"AvailabilityZone" : { "Ref" : "awsAVZone2" },
+        "CidrBlock" : { "Ref" : "awsDATA2CIDR" },
+        "Tags" : [
+          { "Key" : "Client", "Value" : { "Ref" : "ClientName" } },
+          { "Key" : "Network", "Value" : "Public" },
+	      { "Key" : "Name", "Value": { "Fn::Join" : [ "-", [ { "Ref" : "awsRegionLabel" },{ "Ref" : "awsAVZone2Label" }, { "Ref" : "ClientName" }, { "Ref" : "ClientsDATARole" }, "sb" ]]}}
+        ]
+      }
+    },
+
+    "awsDATA3Subnet" : {
+      "DependsOn" : ["cpaVPC"],
+      "Type" : "AWS::EC2::Subnet",
+      "Properties" : {
+        "VpcId" : { "Ref" : "cpaVPC" },
+		"AvailabilityZone" : { "Ref" : "awsAVZone3" },
+        "CidrBlock" : { "Ref" : "awsDATA3CIDR" },
+        "Tags" : [
+          { "Key" : "Client", "Value" : { "Ref" : "ClientName" } },
+          { "Key" : "Network", "Value" : "Public" },
+	      { "Key" : "Name", "Value": { "Fn::Join" : [ "-", [ { "Ref" : "awsRegionLabel" },{ "Ref" : "awsAVZone3Label" }, { "Ref" : "ClientName" }, { "Ref" : "ClientsDATARole" }, "sb" ]]}}
+        ]
+      }
+    },
+	
+    "awsTEST1Subnet" : {
+      "DependsOn" : ["cpaVPC"],
+      "Type" : "AWS::EC2::Subnet",
+      "Properties" : {
+        "VpcId" : { "Ref" : "cpaVPC" },
+		"AvailabilityZone" : { "Ref" : "awsAVZone1" },
+        "CidrBlock" : { "Ref" : "awsTEST1CIDR" },
+        "Tags" : [
+          { "Key" : "Client", "Value" : { "Ref" : "ClientName" } },
+          { "Key" : "Network", "Value" : "Public" },
+	      { "Key" : "Name", "Value": { "Fn::Join" : [ "-", [ { "Ref" : "awsRegionLabel" },{ "Ref" : "awsAVZone1Label" }, { "Ref" : "ClientName" }, { "Ref" : "ClientsTESTRole" }, "sb" ]]}}
+        ]
+      }
+    },
+
+    "awsTEST2Subnet" : {
+      "DependsOn" : ["cpaVPC"],
+      "Type" : "AWS::EC2::Subnet",
+      "Properties" : {
+        "VpcId" : { "Ref" : "cpaVPC" },
+		"AvailabilityZone" : { "Ref" : "awsAVZone2" },
+        "CidrBlock" : { "Ref" : "awsTEST2CIDR" },
+        "Tags" : [
+          { "Key" : "Client", "Value" : { "Ref" : "ClientName" } },
+          { "Key" : "Network", "Value" : "Public" },
+	      { "Key" : "Name", "Value": { "Fn::Join" : [ "-", [ { "Ref" : "awsRegionLabel" },{ "Ref" : "awsAVZone2Label" }, { "Ref" : "ClientName" }, { "Ref" : "ClientsTESTRole" }, "sb" ]]}}
+        ]
+      }
+    },
+	
+    "myInternetGateway" : {
+      "Type" : "AWS::EC2::InternetGateway",
+      "Properties" : {
+        "Tags" : [
+          { "Key" : "Client", "Value" : { "Ref" : "ClientName" } },
+          { "Key" : "Network", "Value" : "Public" },
+	      { "Key" : "Name", "Value": { "Fn::Join" : [ "-", [ { "Ref" : "awsRegionLabel" }, { "Ref" : "ClientName" }, "igw" ]]}}		  
+        ]
+      }
+    },
+
+    "GatewayToInternet" : {
+       "DependsOn" : ["cpaVPC", "myInternetGateway"],
+       "Type" : "AWS::EC2::VPCGatewayAttachment",
+       "Properties" : {
+         "VpcId" : { "Ref" : "cpaVPC" },
+         "InternetGatewayId" : { "Ref" : "myInternetGateway" }
+       }
+    },
+
+    "DMZRouteTable" : {
+      "DependsOn" : ["cpaVPC"],
+      "Type" : "AWS::EC2::RouteTable",
+      "Properties" : {
+        "VpcId" : { "Ref" : "cpaVPC" },
+        "Tags" : [
+          { "Key" : "Client", "Value" : { "Ref" : "ClientName" } },
+          { "Key" : "Network", "Value" : "Public" },
+		  { "Key" : "Name", "Value": { "Fn::Join" : [ "-", [ { "Ref" : "ClientName" }, { "Ref" : "ClientsDMZRole" },  "rt" ]]}}	
+        ]
+      }
+    },
+
+    "DMZPublicRoute" : {
+      "DependsOn" : ["DMZRouteTable", "myInternetGateway"],
+      "Type" : "AWS::EC2::Route",
+      "Properties" : {
+        "RouteTableId" : { "Ref" : "DMZRouteTable" },
+        "DestinationCidrBlock" : "0.0.0.0/0",
+        "GatewayId" : { "Ref" : "myInternetGateway" }
+      }
+    },
+
+    "awsDMZ1SubnetRouteTableAssociation" : {
+      "DependsOn" : ["awsDMZ1Subnet", "DMZRouteTable"],
+      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties" : {
+        "SubnetId" : { "Ref" : "awsDMZ1Subnet" },
+        "RouteTableId" : { "Ref" : "DMZRouteTable" }
+      }
+    },
+	
+    "awsDMZ2SubnetRouteTableAssociation" : {
+      "DependsOn" : ["awsDMZ2Subnet", "DMZRouteTable"],
+      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties" : {
+        "SubnetId" : { "Ref" : "awsDMZ2Subnet" },
+        "RouteTableId" : { "Ref" : "DMZRouteTable" }
+      }
+    },	
+	
+    "awsDMZ3SubnetRouteTableAssociation" : {
+      "DependsOn" : ["awsDMZ3Subnet", "DMZRouteTable"],
+      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties" : {
+        "SubnetId" : { "Ref" : "awsDMZ3Subnet" },
+        "RouteTableId" : { "Ref" : "DMZRouteTable" }
+      }
+    },		
+
+
+    "DATARouteTable" : {
+      "DependsOn" : ["cpaVPC"],
+      "Type" : "AWS::EC2::RouteTable",
+      "Properties" : {
+        "VpcId" : { "Ref" : "cpaVPC" },
+        "Tags" : [
+          { "Key" : "Client", "Value" : { "Ref" : "ClientName" } },
+          { "Key" : "Network", "Value" : "Public" },
+		  { "Key" : "Name", "Value": { "Fn::Join" : [ "-", [ { "Ref" : "ClientName" }, { "Ref" : "ClientsDATARole" },  "rt" ]]}}	
+        ]
+      }
+    },
+
+    "DATAPublicRoute" : {
+      "DependsOn" : ["DATARouteTable", "myInternetGateway"],
+      "Type" : "AWS::EC2::Route",
+      "Properties" : {
+        "RouteTableId" : { "Ref" : "DATARouteTable" },
+        "DestinationCidrBlock" : "0.0.0.0/0",
+        "GatewayId" : { "Ref" : "myInternetGateway" }
+      }
+    },
+
+    "awsDATA1SubnetRouteTableAssociation" : {
+      "DependsOn" : ["awsDATA1Subnet", "DATARouteTable"],
+      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties" : {
+        "SubnetId" : { "Ref" : "awsDATA1Subnet" },
+        "RouteTableId" : { "Ref" : "DATARouteTable" }
+      }
+    },
+	
+    "awsDATA2SubnetRouteTableAssociation" : {
+      "DependsOn" : ["awsDATA2Subnet", "DATARouteTable"],
+      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties" : {
+        "SubnetId" : { "Ref" : "awsDATA2Subnet" },
+        "RouteTableId" : { "Ref" : "DATARouteTable" }
+      }
+    },	
+	
+    "awsDATA3SubnetRouteTableAssociation" : {
+      "DependsOn" : ["awsDATA3Subnet", "DATARouteTable"],
+      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties" : {
+        "SubnetId" : { "Ref" : "awsDATA3Subnet" },
+        "RouteTableId" : { "Ref" : "DATARouteTable" }
+      }
+    },	
+
+    "TESTRouteTable" : {
+      "DependsOn" : ["cpaVPC"],
+      "Type" : "AWS::EC2::RouteTable",
+      "Properties" : {
+        "VpcId" : { "Ref" : "cpaVPC" },
+        "Tags" : [
+          { "Key" : "Client", "Value" : { "Ref" : "ClientName" } },
+          { "Key" : "Network", "Value" : "Public" },
+		  { "Key" : "Name", "Value": { "Fn::Join" : [ "-", [ { "Ref" : "ClientName" }, { "Ref" : "ClientsTESTRole" },  "rt" ]]}}	
+        ]
+      }
+    },
+
+    "TESTPublicRoute" : {
+      "DependsOn" : ["TESTRouteTable", "myInternetGateway"],
+      "Type" : "AWS::EC2::Route",
+      "Properties" : {
+        "RouteTableId" : { "Ref" : "TESTRouteTable" },
+        "DestinationCidrBlock" : "0.0.0.0/0",
+        "GatewayId" : { "Ref" : "myInternetGateway" }
+      }
+    },
+
+    "awsTEST1SubnetRouteTableAssociation" : {
+      "DependsOn" : ["awsTEST1Subnet", "TESTRouteTable"],
+      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties" : {
+        "SubnetId" : { "Ref" : "awsTEST1Subnet" },
+        "RouteTableId" : { "Ref" : "TESTRouteTable" }
+      }
+    },
+	
+    "awsTEST2SubnetRouteTableAssociation" : {
+      "DependsOn" : ["awsTEST2Subnet", "TESTRouteTable"],
+      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties" : {
+        "SubnetId" : { "Ref" : "awsTEST2Subnet" },
+        "RouteTableId" : { "Ref" : "TESTRouteTable" }
+      }
+    },	
+	
+    "ELBProdSG" : {
+      "DependsOn" : ["cpaVPC"],
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "GroupDescription" : "Enable HTTPS access via port 443 + RDP access",
+        "VpcId" : { "Ref" : "cpaVPC" },
+	    "SecurityGroupIngress" : [
+		  {"IpProtocol" : "tcp", "FromPort" : "443", "ToPort" : "443", "CidrIp" : "0.0.0.0/0"}
+		],
+	      "Tags" : [
+		    { "Key" : "Client", "Value" : { "Ref" : "ClientName" } },
+	        { "Key" : "Desc", "Value" : "ELB Security Group" },
+	        { "Key" : "Name", "Value": { "Fn::Join" : [ "-", [ { "Ref" : "awsRegionLabel" }, { "Ref" : "ClientName" }, "Prod", { "Ref" : "ClientAppRole" }, "elb-sg" ]]}}			
+        ]
+      }
+    },
+
+    "RDSProdSG" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "GroupDescription" : "Enable Web access on RDS",
+        "VpcId" : { "Ref" : "cpaVPC" },
+	    "SecurityGroupIngress" : [
+          {"IpProtocol" : "tcp", "FromPort" : "1521", "ToPort" : "1521", "CidrIp" : { "Ref" : "ServerAccess"}}
+		],
+	      "Tags" : [
+		    { "Key" : "Client", "Value" : { "Ref" : "ClientName" } },
+	        { "Key" : "Desc", "Value" : "Web Server Security Group" },
+	        { "Key" : "Name", "Value": { "Fn::Join" : [ "-", [ { "Ref" : "awsRegionLabel" }, { "Ref" : "ClientName" }, "Prod", "db-oracle-sg" ]]}}			
+        ]
+      }
+    },	
+	
+    "RDSPrdSGIngr1521" : {
+      "DependsOn" : ["RDSProdSG"],
+      "Type": "AWS::EC2::SecurityGroupIngress",
+      "Properties": {
+	      "GroupId": { "Ref": "RDSProdSG" },
+	      "IpProtocol": "tcp",
+	      "FromPort": "1521",
+	      "ToPort": "1521",
+	      "SourceSecurityGroupId": { "Ref": "WebProdSG" }
+      }
+    },	
+	
+    "WebProdSG" : {
+      "DependsOn" : ["ELBProdSG", "RDSProdSG"],
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "GroupDescription" : "Enable HTTPS access via port 443, RDS access",
+        "VpcId" : { "Ref" : "cpaVPC" },
+	    "SecurityGroupIngress" : [
+          {"IpProtocol" : "tcp", "FromPort" : "1521", "ToPort" : "1521", "CidrIp" : { "Ref" : "ServerAccess"}}
+		],
+	      "Tags" : [
+		    { "Key" : "Client", "Value" : { "Ref" : "ClientName" } },
+	        { "Key" : "Desc", "Value" : "Web Server Security Group" },
+	        { "Key" : "Name", "Value": { "Fn::Join" : [ "-", [ { "Ref" : "awsRegionLabel" }, { "Ref" : "ClientName" }, "Prod", { "Ref" : "ClientAppRole" }, "iis-sg" ]]}}			
+        ]
+      }
+    },	
+	
+    "WebPrdSGIngr443" : {
+      "DependsOn" : ["WebProdSG"],
+      "Type": "AWS::EC2::SecurityGroupIngress",
+      "Properties": {
+	      "GroupId": { "Ref": "WebProdSG" },
+	      "IpProtocol": "tcp",
+	      "FromPort": "443",
+	      "ToPort": "443",
+	      "SourceSecurityGroupId": { "Ref": "ELBProdSG" }
+      }
+    },	
+	
+    "WebPrdSGIngr1521" : {
+      "DependsOn" : ["WebProdSG"],
+      "Type": "AWS::EC2::SecurityGroupIngress",
+      "Properties": {
+	      "GroupId": { "Ref": "WebProdSG" },
+	      "IpProtocol": "tcp",
+	      "FromPort": "1521",
+	      "ToPort": "1521",
+	      "SourceSecurityGroupId": { "Ref": "RDSProdSG" }
+      }
+    },	
+
+    "WebRDPProdSG" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "GroupDescription" : "Enable RDP access",
+        "VpcId" : { "Ref" : "cpaVPC" },
+	    "SecurityGroupIngress" : [
+          {"IpProtocol" : "tcp", "FromPort" : "3389", "ToPort" : "3389", "CidrIp" : { "Ref" : "ServerAccess"}}
+		],
+	      "Tags" : [
+		    { "Key" : "Client", "Value" : { "Ref" : "ClientName" } },
+	        { "Key" : "Desc", "Value" : "Web Server Security Group" },
+	        { "Key" : "Name", "Value": { "Fn::Join" : [ "-", [ { "Ref" : "awsRegionLabel" }, { "Ref" : "ClientName" }, "Prod", { "Ref" : "ClientAppRole" }, "rdp-sg" ]]}}			
+        ]
+      }
+    },
+    "ELBTestSG" : {
+        "DependsOn" : ["cpaVPC"],
+        "Type" : "AWS::EC2::SecurityGroup",
+        "Properties" : {
+          "GroupDescription" : "Enable HTTPS access via port 443 + RDP access",
+          "VpcId" : { "Ref" : "cpaVPC" },
+          "SecurityGroupIngress" : [
+            {"IpProtocol" : "tcp", "FromPort" : "443", "ToPort" : "443", "CidrIp" : "0.0.0.0/0"}
+          ],
+            "Tags" : [
+              { "Key" : "Client", "Value" : { "Ref" : "ClientName" } },
+              { "Key" : "Desc", "Value" : "ELB Security Group" },
+              { "Key" : "Name", "Value": { "Fn::Join" : [ "-", [ { "Ref" : "awsRegionLabel" }, { "Ref" : "ClientName" }, "Test", { "Ref" : "ClientAppRole" }, "elb-sg" ]]}}			
+          ]
+        }
+      },
+  
+      "RDSTestSG" : {
+        "Type" : "AWS::EC2::SecurityGroup",
+        "Properties" : {
+          "GroupDescription" : "Enable Web access on RDS",
+          "VpcId" : { "Ref" : "cpaVPC" },
+          "SecurityGroupIngress" : [
+            {"IpProtocol" : "tcp", "FromPort" : "1521", "ToPort" : "1521", "CidrIp" : { "Ref" : "ServerAccess"}}
+          ],
+            "Tags" : [
+              { "Key" : "Client", "Value" : { "Ref" : "ClientName" } },
+              { "Key" : "Desc", "Value" : "Web Server Security Group" },
+              { "Key" : "Name", "Value": { "Fn::Join" : [ "-", [ { "Ref" : "awsRegionLabel" }, { "Ref" : "ClientName" }, "Test", "db-oracle-sg" ]]}}			
+          ]
+        }
+      },	
+      
+      "RDSTstSGIngr1521" : {
+        "DependsOn" : ["RDSTestSG"],
+        "Type": "AWS::EC2::SecurityGroupIngress",
+        "Properties": {
+            "GroupId": { "Ref": "RDSTestSG" },
+            "IpProtocol": "tcp",
+            "FromPort": "1521",
+            "ToPort": "1521",
+            "SourceSecurityGroupId": { "Ref": "WebTestSG" }
+        }
+      },	
+      
+      "WebTestSG" : {
+        "DependsOn" : ["ELBTestSG", "RDSTestSG"],
+        "Type" : "AWS::EC2::SecurityGroup",
+        "Properties" : {
+          "GroupDescription" : "Enable HTTPS access via port 443, RDS access",
+          "VpcId" : { "Ref" : "cpaVPC" },
+          "SecurityGroupIngress" : [
+            {"IpProtocol" : "tcp", "FromPort" : "1521", "ToPort" : "1521", "CidrIp" : { "Ref" : "ServerAccess"}}
+          ],
+            "Tags" : [
+              { "Key" : "Client", "Value" : { "Ref" : "ClientName" } },
+              { "Key" : "Desc", "Value" : "Web Server Security Group" },
+              { "Key" : "Name", "Value": { "Fn::Join" : [ "-", [ { "Ref" : "awsRegionLabel" }, { "Ref" : "ClientName" }, "Test", { "Ref" : "ClientAppRole" }, "iis-sg" ]]}}			
+          ]
+        }
+      },	
+      
+      "WebTstSGIngr443" : {
+        "DependsOn" : ["WebTestSG"],
+        "Type": "AWS::EC2::SecurityGroupIngress",
+        "Properties": {
+            "GroupId": { "Ref": "WebTestSG" },
+            "IpProtocol": "tcp",
+            "FromPort": "443",
+            "ToPort": "443",
+            "SourceSecurityGroupId": { "Ref": "ELBTestSG" }
+        }
+      },	
+      
+      "WebTstSGIngr1521" : {
+        "DependsOn" : ["WebTestSG"],
+        "Type": "AWS::EC2::SecurityGroupIngress",
+        "Properties": {
+            "GroupId": { "Ref": "WebTestSG" },
+            "IpProtocol": "tcp",
+            "FromPort": "1521",
+            "ToPort": "1521",
+            "SourceSecurityGroupId": { "Ref": "RDSTestSG" }
+        }
+      },	
+  
+      "WebRDPTestSG" : {
+        "Type" : "AWS::EC2::SecurityGroup",
+        "Properties" : {
+          "GroupDescription" : "Enable RDP access",
+          "VpcId" : { "Ref" : "cpaVPC" },
+          "SecurityGroupIngress" : [
+            {"IpProtocol" : "tcp", "FromPort" : "3389", "ToPort" : "3389", "CidrIp" : { "Ref" : "ServerAccess"}}
+          ],
+            "Tags" : [
+              { "Key" : "Client", "Value" : { "Ref" : "ClientName" } },
+              { "Key" : "Desc", "Value" : "Web Server Security Group" },
+              { "Key" : "Name", "Value": { "Fn::Join" : [ "-", [ { "Ref" : "awsRegionLabel" }, { "Ref" : "ClientName" }, "Test", { "Ref" : "ClientAppRole" }, "rdp-sg" ]]}}			
+          ]
+        }
+      }   	
+ }
+}
+
